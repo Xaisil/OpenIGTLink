@@ -144,7 +144,9 @@ int main(int argc, char* argv[])
 #if OpenIGTLink_PROTOCOL_VERSION >= 2
         else if (strcmp(headerMsg->GetDeviceType(), "POINT") == 0)
           {
-          ReceivePoint(socket, headerMsg);
+            igtl:Sleep(2000); //Czas by stworzyæ serwer po stronie klienta
+            ReceivePoint(socket, headerMsg);
+            break;
           }
         else if (strcmp(headerMsg->GetDeviceType(), "TRAJ") == 0)
           {
@@ -170,7 +172,10 @@ int main(int argc, char* argv[])
           std::cerr << "Size : " << headerMsg->GetBodySizeToRead() << std::endl;
           socket->Skip(headerMsg->GetBodySizeToRead(), 0);
           }
+
+
         }
+      break;
       }
     }
     
@@ -242,6 +247,7 @@ int ReceivePosition(igtl::Socket * socket, igtl::MessageHeader * header)
     std::cerr << "position   = (" << position[0] << ", " << position[1] << ", " << position[2] << ")" << std::endl;
     std::cerr << "quaternion = (" << quaternion[0] << ", " << quaternion[1] << ", "
               << quaternion[2] << ", " << quaternion[3] << ")" << std::endl << std::endl;
+
 
     return 1;
     }
@@ -374,6 +380,25 @@ int ReceivePoint(igtl::Socket * socket, igtl::MessageHeader * header)
       std::cerr << " GroupName : " << pointElement->GetGroupName() << std::endl;
       std::cerr << " RGBA      : ( " << (int)rgba[0] << ", " << (int)rgba[1] << ", " << (int)rgba[2] << ", " << (int)rgba[3] << " )" << std::endl;
       std::cerr << " Position  : ( " << std::fixed << pos[0] << ", " << pos[1] << ", " << pos[2] << " )" << std::endl;
+      //////////////////////////////////////////////////////////////////////////////////
+      for (size_t i = 0; i < 3; i++)
+      {
+          pos[i] *= -1;
+      }
+      std::cerr << " Changes position to  : ( " << std::fixed << pos[0] << ", " << pos[1] << ", " << pos[2] << " )" << std::endl;
+      
+
+
+      igtl::PointMessage::Pointer pointMsgSender;
+      pointMsgSender = igtl::PointMessage::New();
+      pointMsgSender->SetDeviceName("PointSender");
+      pointElement->SetPosition(pos[0], pos[1], pos[2]);
+
+      pointMsgSender->AddPointElement(pointElement);
+      pointMsgSender->Pack();
+      socket->Send(pointMsgSender->GetPackPointer(), pointMsgSender->GetPackSize());
+      igtl::Sleep(1000);
+      //////////////////////////////////////////////////////////////////////////////////
       std::cerr << " Radius    : " << std::fixed << pointElement->GetRadius() << std::endl;
       std::cerr << " Owner     : " << pointElement->GetOwner() << std::endl;
       std::cerr << "================================" << std::endl;
